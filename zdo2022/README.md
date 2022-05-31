@@ -1,1 +1,0 @@
-# zdo_seminar
