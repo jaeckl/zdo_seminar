@@ -10,9 +10,11 @@ class VideoFile:
     def __init__(self,filepath):
         """ Create a new VideoFile object from a directory containing images and annotations.
         """
+        self.has_annot = False
+
         self.__load_annotations(os.path.join(filepath,"annotations.xml"))
         self.__load_frames(os.path.join(filepath,"images"))
-        print(self.annotations["filename"].unique())
+        
     
     def __len__(self):
         """ Returns the number of frames in the video."""
@@ -25,10 +27,13 @@ class VideoFile:
     
     def get_frame(self,frame_no):
         """ Retursn the frame given by the index."""
-        delta_frame_id = str(frame_no + int(self.annotations.frame_id.iloc[0]))
-        return self.frames[frame_no], self.annotations[
-            self.annotations.frame_id == delta_frame_id
-            ]
+        if self.has_annot:
+            delta_frame_id = str(frame_no + int(self.annotations.frame_id.iloc[0]))
+            return self.frames[frame_no], self.annotations[
+                self.annotations.frame_id == delta_frame_id
+                ]
+        else:
+            return self.frames[frame_no],None
     
     def __load_annotations(self,path):
         """Internal method for loading the annotation data from the .xml file."""
@@ -42,10 +47,16 @@ class VideoFile:
             "annotation_timestamp": [],
         }
 
+        if not os.path.isfile(path):
+            self.name = os.path.split(path)[-1]
+            return
+        self.has_annot = True
+        
         tree = etree.parse(path)
+        
         self.name = tree.xpath("//name")[0].text
         updated = tree.xpath("//updated")[0].text # date of last change in CVAT
-
+        
         for track in tree.xpath('track'):
             for point in track.xpath("points"):
                 pts = point.get("points").split(",")
